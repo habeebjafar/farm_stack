@@ -68,7 +68,6 @@ class _CattlePageState extends State<CattlePage> {
           builder: (BuildContext context,
               AsyncSnapshot<List<CattleModel>> snapShot) {
             
-
             if (snapShot.connectionState == ConnectionState.waiting) {
               return Scaffold(
                 body: Center(

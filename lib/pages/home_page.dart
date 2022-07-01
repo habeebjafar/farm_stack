@@ -4,7 +4,7 @@ import 'package:farmapp/pages/events_report_page.dart';
 import 'package:farmapp/pages/farm_notes.dart';
 import 'package:farmapp/pages/farm_setup_page.dart';
 import 'package:farmapp/pages/milk_record_page.dart';
-import 'package:farmapp/pages/milk_report_page.dart';
+import 'package:farmapp/pages/newhomepage.dart';
 import 'package:farmapp/pages/pie_chart_page.dart';
 import 'package:farmapp/pages/report_page.dart';
 import 'package:farmapp/pages/transaction_page.dart';
@@ -90,7 +90,8 @@ class _HomePageState extends State<HomePage> {
                   onTap: () {
                     Navigator.pop(context);
                     Navigator.push(context,
-                        MaterialPageRoute(builder: (context) => MilkReportPage()));
+                       // MaterialPageRoute(builder: (context) => MilkReportPage()));
+                        MaterialPageRoute(builder: (context) => NewHomeScreen()));
                   },
                   // onTap: () => selectDestination(3),
                 ),
@@ -129,6 +130,7 @@ class _HomePageState extends State<HomePage> {
                         MaterialPageRoute(builder: (context) => TransactionReportPage()));
                   },
                 ),
+                
                 // ListTile(
                 //   leading: Icon(Icons.label),
                 //   title: Text('Back & Restore'),
@@ -207,7 +209,7 @@ class _HomePageState extends State<HomePage> {
 Click on the Link below to download it from App Store. \n\n
 
 https://apps.apple.com/us/app/track-my-brand/id1597499479
-                    
+                   
                     
                     ''', 
                     subject: 'The Brand Marketing');
@@ -233,7 +235,8 @@ https://apps.apple.com/us/app/track-my-brand/id1597499479
                 // ),
               ],
             ),
-          )),
+          )
+          ),
       body: SingleChildScrollView(
         child: Stack(
           children: [

@@ -23,8 +23,6 @@ class _CattleBreedSearchPageState extends State<CattleBreedSearchPage> {
   }
 
   
- 
-
 List<CattleBreedModel> duplicateItems  = [];
 
   List<CattleBreedModel> items   = [];
