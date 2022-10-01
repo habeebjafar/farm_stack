@@ -1,8 +1,11 @@
+import 'package:farmapp/ad_helper.dart';
 import 'package:farmapp/provider/events_provider.dart';
 import 'package:farmapp/services/event_individual_service.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'cattle_details_page.dart';
 import 'individual_event_form.dart';
@@ -19,17 +22,64 @@ class _IndividualEventState extends State<IndividualEvent> {
 
   var eventProvider;
 
+    static final _kAdIndex = 1;
+  BannerAd? _ad;
+  late BannerAd _bannerAd;
+ 
+  int _getDestinationItemIndex(int rawIndex) {
+    if (rawIndex >= _kAdIndex && _ad != null) {
+      return rawIndex - 1;
+    }
+    return rawIndex;
+  }
+  
+
+   _loadBannerAds() async {
+    SharedPreferences _prefs = await SharedPreferences.getInstance();
+    //bool _isSubscribed;
+    int? isSubscribed = _prefs.getInt("subscribed");
+    if (isSubscribed != 1) {
+      _bannerAd.load();
+    }
+  }
+
   @override
   void initState() {
     super.initState();
-    // provider = Provider.of<CattleProvider>(context, listen: false);
-    // provider.getCattleById(this.widget.index);
+    
+    _bannerAd = BannerAd(
+      adUnitId: AdHelper.bannerAdUnitId,
+      size: AdSize.fullBanner,
+      request: AdRequest(),
+      listener: BannerAdListener(
+        onAdLoaded: (ad) {
+          setState(() {
+            _ad = ad as BannerAd;
+          });
+        },
+        onAdFailedToLoad: (ad, error) {
+          ad.dispose();
+          print('Ad load failed (code=${error.code} message=${error.message})');
+        },
+      ),
+    );
+
+    _loadBannerAds();
+
     eventProvider = Provider.of<EventsProvider>(context, listen: false);
 
     eventProvider.getAllIndividualEventRecord(searchEventType: "All");
 
   //  _getAllIndividualEventRecord();
     //_searchResearch();
+  }
+
+   @override
+  void dispose() {
+      _ad?.dispose();
+       _bannerAd.dispose();
+    super.dispose();
+    
   }
 
 
@@ -65,12 +115,25 @@ class _IndividualEventState extends State<IndividualEvent> {
           ),)
         ) : ListView.builder(
                     padding: EdgeInsets.only(bottom: 70),
-                    itemCount: eventProvider.individualEventsList.length,
+                    itemCount: eventProvider.individualEventsList.length + (_ad != null ? 1 : 0),
                     itemBuilder: (BuildContext context, int index) {
-                      print("cheching id again ${eventProvider.individualEventsList[index].id}");
+                     
+                      final newIndex = _getDestinationItemIndex(index);
                       String med = eventProvider
-                          .individualEventsList[index].eventType
+                          .individualEventsList[newIndex].eventType
                           .toString();
+
+                           if (_ad != null && index == _kAdIndex) {
+                              return Card(
+                                child: Container(
+                                  width: _ad!.size.width.toDouble(),
+                                  padding: EdgeInsets.symmetric(horizontal: 6),
+                                  height: 90.0,
+                                  alignment: Alignment.center,
+                                  child: AdWidget(ad: _ad!),
+                                ),
+                              );
+                            } else {
                       return Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 3),
                         child: Card(
@@ -95,7 +158,7 @@ class _IndividualEventState extends State<IndividualEvent> {
                                           ),
                                           SizedBox(width: 10),
                                           Text(
-                                            "${med == 'Other' ? eventProvider.individualEventsList[index].nameOfMedicine : eventProvider.individualEventsList[index].eventType}",
+                                            "${med == 'Other' ? eventProvider.individualEventsList[newIndex].nameOfMedicine : eventProvider.individualEventsList[newIndex].eventType}",
                                             style: TextStyle(
                                                 fontSize: 18,
                                                 color: Colors.white,
@@ -103,7 +166,7 @@ class _IndividualEventState extends State<IndividualEvent> {
                                           ),
                                         ],
                                       ),
-                                      popupMenuWidget(index, eventProvider.individualEventsList[index].id ,eventProvider.individualEventsList[index].cattleId)
+                                      popupMenuWidget(newIndex, eventProvider.individualEventsList[newIndex].id ,eventProvider.individualEventsList[newIndex].cattleId)
                                     ],
                                   ),
                                 ),
@@ -123,7 +186,7 @@ class _IndividualEventState extends State<IndividualEvent> {
                                       width: 80,
                                     ),
                                     Text(
-                                      "${eventProvider.individualEventsList[index].eventDate}",
+                                      "${eventProvider.individualEventsList[newIndex].eventDate}",
                                       style: TextStyle(
                                           fontWeight: FontWeight.w600,
                                           color: Theme.of(context).primaryColor,
@@ -147,7 +210,7 @@ class _IndividualEventState extends State<IndividualEvent> {
                                       width: 60,
                                     ),
                                     Text(
-                                      "${eventProvider.individualEventsList[index].cattleTagNo}",
+                                      "${eventProvider.individualEventsList[newIndex].cattleTagNo}",
                                       style: TextStyle(
                                           fontWeight: FontWeight.w600,
                                           color: Theme.of(context).primaryColor,
@@ -162,7 +225,7 @@ class _IndividualEventState extends State<IndividualEvent> {
                                 context,
                                 MaterialPageRoute(
                                     builder: (context) =>
-                                        CattleDetailsPage(int.parse(eventProvider.individualEventsList[index].cattleId!))));
+                                        CattleDetailsPage(int.parse(eventProvider.individualEventsList[newIndex].cattleId!))));
                                       }, 
                                       icon: Icon(Icons.search, color: Colors.orange,)
                                       )
@@ -191,7 +254,7 @@ class _IndividualEventState extends State<IndividualEvent> {
                                             width: 45,
                                           ),
                                           Text(
-                                            "${eventProvider.individualEventsList[index].nameOfMedicine}",
+                                            "${eventProvider.individualEventsList[newIndex].nameOfMedicine}",
                                             style: TextStyle(
                                                 fontWeight: FontWeight.w600,
                                                 color: Theme.of(context)
@@ -220,7 +283,7 @@ class _IndividualEventState extends State<IndividualEvent> {
                                     Container(
                                       width: 200,
                                       child: Text(
-                                        "${eventProvider.individualEventsList[index].eventNotes}",
+                                        "${eventProvider.individualEventsList[newIndex].eventNotes}",
                                         style: TextStyle(
                                             fontWeight: FontWeight.w600,
                                             color: Theme.of(context).primaryColor,
@@ -233,7 +296,9 @@ class _IndividualEventState extends State<IndividualEvent> {
                             ),
                           ),
                         ),
+                        
                       );
+                            }
                     }),
               );
             }

@@ -105,7 +105,8 @@
 
 
 
-import 'package:farmapp/pages/home_page.dart';
+
+import 'package:farmapp/pages/newhomepage.dart';
 import 'package:farmapp/provider/cattle_provider.dart';
 import 'package:farmapp/provider/events_provider.dart';
 import 'package:farmapp/provider/farm_note_provider.dart';
@@ -113,8 +114,11 @@ import 'package:farmapp/provider/milk_provider.dart';
 import 'package:farmapp/provider/transactions_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:google_mobile_ads/google_mobile_ads.dart';
 
 void main() {
+   WidgetsFlutterBinding.ensureInitialized();
+  MobileAds.instance.initialize();
   runApp(MyApp());
 }
 
@@ -157,8 +161,8 @@ class MyApp extends StatelessWidget {
             
             primarySwatch: Colors.green,
           ),
-         home: HomePage()
-          // home: NewHomeScreen()
+        //  home: HomePage()
+          home: NewHomeScreen()
         ),
       );
     

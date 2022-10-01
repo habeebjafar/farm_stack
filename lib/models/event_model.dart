@@ -1,6 +1,7 @@
 class EventModel{
   int? id;
   String? eventDate;
+  String? numOfCattles;
   String? eventType;
   String? nameOfMedicine;
   String? eventNotes;
@@ -9,6 +10,7 @@ class EventModel{
     return{
       if(id != null) "id" : id.toString(),
       "eventDate": this.eventDate,
+      "numOfCattles": this.numOfCattles,
       "eventType": this.eventType,
       "nameOfMedicine": this.nameOfMedicine,
       "eventNotes": this.eventNotes,

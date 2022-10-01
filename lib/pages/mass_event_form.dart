@@ -23,12 +23,26 @@ class _MassEventFormState extends State<MassEventForm> {
   @override
   void initState() {
     super.initState();
+    numOfCattlesController.text = "1";
     if(this.widget.index != null)  _editValues();
+  }
+
+    @override
+  void dispose(){
+    
+     eventDateController.dispose();
+     numOfCattlesController.dispose();
+     noteController.dispose();
+     nameOfMedicineController.dispose();
+    
+    super.dispose();
+    
   }
 
   var response;
 
   TextEditingController eventDateController = TextEditingController();
+   TextEditingController numOfCattlesController = TextEditingController();
   TextEditingController noteController = TextEditingController();
 
   TextEditingController nameOfMedicineController = TextEditingController();
@@ -81,6 +95,8 @@ class _MassEventFormState extends State<MassEventForm> {
     var provider = Provider.of<EventsProvider>(context, listen: false);
     eventDateController.text =
         provider.massEventsList[this.widget.index].eventDate!;
+    numOfCattlesController.text =
+        provider.massEventsList[this.widget.index].numOfCattles!;
     noteController.text =
         provider.massEventsList[this.widget.index].eventNotes!;
     nameOfMedicineController.text =
@@ -96,6 +112,7 @@ class _MassEventFormState extends State<MassEventForm> {
     eventModel.eventDate = eventDateController.text;
 
     eventModel.eventNotes = noteController.text;
+    eventModel.numOfCattles = numOfCattlesController.text;
     eventModel.eventType = selectedValue.toString();
 
     eventModel.nameOfMedicine = nameOfMedicineController.text;
@@ -131,12 +148,7 @@ class _MassEventFormState extends State<MassEventForm> {
 
     final snackBar = SnackBar(
       content: const Text('Please fill all the fields marked with (*)'),
-      // action: SnackBarAction(
-      //   label: 'Undo',
-      //   onPressed: () {
-      //     // Some code to undo the change.
-      //   },
-      // ),
+  
       duration: Duration(seconds: 2),
     );
     ScaffoldMessenger.of(context).showSnackBar(snackBar);
@@ -255,6 +267,26 @@ class _MassEventFormState extends State<MassEventForm> {
                       height: 20,
                     )
                   : Container(),
+
+              TextFormField(
+                      controller: numOfCattlesController,
+                      validator: (input) => input!.length < 1 ? "Required" : null,
+                      keyboardType: TextInputType.number,
+                      style: TextStyle(fontSize: 20.0),
+                      decoration: InputDecoration(
+                          contentPadding:
+                              EdgeInsets.fromLTRB(20.0, 15.0, 20.0, 15.0),
+                          //hintText: "Cattle name. *",
+                          labelText: "Number of Cattles",
+                          //hintText: "2",
+                          border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(5.0))),
+                    ), 
+
+                    SizedBox(
+                      height: 20,
+                    ),
+                    
               TextFormField(
                 controller: noteController,
                 maxLines: null,

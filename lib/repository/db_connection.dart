@@ -58,6 +58,7 @@ class DbConnection {
     await db.execute('''
     CREATE TABLE event(id INTEGER PRIMARY KEY AUTOINCREMENT,
      eventDate TEXT,
+     numOfCattles,
      eventType TEXT,
      nameOfMedicine TEXT,
      eventNotes TEXT)
@@ -105,6 +106,21 @@ class DbConnection {
      expenseNotes TEXT,
      amountSpent TEXT,
      receiptNo TEXT)
+    
+    ''');
+
+    await db.execute('''
+    CREATE TABLE transactions(id INTEGER PRIMARY KEY AUTOINCREMENT,
+     transactionType TEXT,
+     date TEXT,
+     type TEXT,
+     milkQty TEXT,
+     selectedValueCategory TEXT,
+     categoryId TEXT,
+     otherIncomeExpense TEXT,
+     amount TEXT,
+     receiptNo TEXT,
+     note TEXT)
     
     ''');
 

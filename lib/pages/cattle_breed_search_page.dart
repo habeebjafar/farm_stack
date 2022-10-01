@@ -22,6 +22,16 @@ class _CattleBreedSearchPageState extends State<CattleBreedSearchPage> {
     _getCattleBreed();
   }
 
+    @override
+  void dispose(){
+    
+     _incomeCategoryName.dispose();
+
+    
+    super.dispose();
+    
+  }
+
   
 List<CattleBreedModel> duplicateItems  = [];
 

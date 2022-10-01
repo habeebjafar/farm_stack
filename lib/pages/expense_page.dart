@@ -1,9 +1,13 @@
-import 'package:farmapp/pages/expenses_form.dart';
+import 'package:farmapp/ad_helper.dart';
 import 'package:farmapp/provider/transactions_provider.dart';
-import 'package:farmapp/services/expense_service.dart';
+import 'package:farmapp/services/transactions_service.dart';
 import 'package:flutter/material.dart';
+import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
+import 'income_form_test.dart';
 
 class ExpensesPage extends StatefulWidget {
   @override
@@ -12,135 +16,244 @@ class ExpensesPage extends StatefulWidget {
 
 class _ExpensesPageState extends State<ExpensesPage> {
 
+    static final _kAdIndex = 1;
+  BannerAd? _ad;
+  late BannerAd _bannerAd;
+ 
+  int _getDestinationItemIndex(int rawIndex) {
+    if (rawIndex >= _kAdIndex && _ad != null) {
+      return rawIndex - 1;
+    }
+    return rawIndex;
+  }
+  
 
-  @override
-  void initState() {
-    super.initState();
-    Provider.of<TransactionsProvider>(context, listen: false).getAllExpensesRecord();
-   
+  
+   InterstitialAd? _interstitialAd;
+ bool _isInterstitialAdReady = false;
+
+  void _loadInterstitialAd() {
+    InterstitialAd.load(
+      adUnitId: AdHelper.interstitialAdUnitId,
+      request: AdRequest(),
+      adLoadCallback: InterstitialAdLoadCallback(
+        onAdLoaded: (ad) {
+          this._interstitialAd = ad;
+
+          ad.fullScreenContentCallback = FullScreenContentCallback(
+            onAdDismissedFullScreenContent: (ad) {},
+          );
+
+          _isInterstitialAdReady = true;
+        },
+        onAdFailedToLoad: (err) {
+          print('Failed to load an interstitial ad: ${err.message}');
+          _isInterstitialAdReady = false;
+        },
+      ),
+    );
+  }
+
+  _loadInterAds() async {
+    SharedPreferences _prefs = await SharedPreferences.getInstance();
+    //bool _isSubscribed;
+    int? isSubscribed = _prefs.getInt("subscribed");
+    if (isSubscribed != 1) {
+       _bannerAd.load();
+      _loadInterstitialAd();
+    }
   }
 
 
 
   @override
+  void initState() {
+    super.initState();
+
+     _bannerAd = BannerAd(
+      adUnitId: AdHelper.bannerAdUnitId,
+      size: AdSize.fullBanner,
+      request: AdRequest(),
+      listener: BannerAdListener(
+        onAdLoaded: (ad) {
+          setState(() {
+            _ad = ad as BannerAd;
+          });
+        },
+        onAdFailedToLoad: (ad, error) {
+          ad.dispose();
+          print('Ad load failed (code=${error.code} message=${error.message})');
+        },
+      ),
+    );
+
+     _loadInterAds();
+
+
+    Provider.of<TransactionsProvider>(context, listen: false)
+        .getAllTransactionsRecord();
+  }
+
+  @override
+  void dispose() {
+    _ad?.dispose();
+    _bannerAd.dispose();
+     _interstitialAd?.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: Consumer<TransactionsProvider>(
-        builder: (_, provider, __) => provider.expenseList.length == 0 ? Center(
-          child: Text("No expense recorded yet!",
-          style: TextStyle(
-            fontSize: 18,
-            color: Colors.orange
-          ),)
-        ) :
-         SingleChildScrollView(
-          child: Column(
-            children: [
-              ListView.builder(
-                shrinkWrap: true,
-                physics: NeverScrollableScrollPhysics(),
-                    itemCount: provider.expenseList.length,
-                    itemBuilder: (BuildContext context, int index) {
-        
-                      String expenseType = provider.expenseList[index].expenseType.toString();
-                      var formatAmountEarned = NumberFormat('#,###.00').format(num.parse("${provider.expenseList[index].amountSpent.toString()}"));
-                       var date = DateFormat('MMMM dd, yyyy').format(DateTime.parse(
-                    "${provider.expenseList[index].expenseDate.toString()}"));
-                     // var form2 = double.parse(formatAmountEarned);
-                      return Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 6),
-                        child: GestureDetector(
-                          onTap: () {
-                            // Navigator.push(
-                            //     context,
-                            //     MaterialPageRoute(
-                            //         builder: (context) =>
-                            //             CattleDetailsPage(_list, index)));
-                          },
-                          child: Card(
-                            child: Column(
-                              children: [
-                                Padding(
-                                  padding: const EdgeInsets.symmetric(horizontal: 8),
-                                  child: Row(
-                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          builder: (_, provider, __) => provider.expenseTransList.length == 0
+              ? Center(
+                  child: Text(
+                  "No expense recorded yet!",
+                  style: TextStyle(fontSize: 18, color: Colors.orange),
+                ))
+              : SingleChildScrollView(
+                  child: Column(
+                    children: [
+                      ListView.builder(
+                          shrinkWrap: true,
+                          physics: NeverScrollableScrollPhysics(),
+                          itemCount: provider.transactionList.length + (_ad != null ? 1 : 0),
+                          itemBuilder: (BuildContext context, int index) {
+                             final newIndex = _getDestinationItemIndex(index);
+                            String expenseType = provider
+                                .transactionList[newIndex].type
+                                .toString();
+                                String transType = provider.transactionList[newIndex].transactionType.toString();
+                            var formatAmountEarned = NumberFormat('#,###.00')
+                                .format(num.parse(
+                                    "${provider.transactionList[newIndex].amount.toString()}"));
+                            var date = DateFormat('MMMM dd, yyyy').format(
+                                DateTime.parse(
+                                    "${provider.transactionList[newIndex].date.toString()}"));
+                            // var form2 = double.parse(formatAmountEarned);
+                             if (_ad != null && index == _kAdIndex) {
+                              return Card(
+                                child: Container(
+                                  width: _ad!.size.width.toDouble(),
+                                  padding: EdgeInsets.symmetric(horizontal: 6),
+                                  height: 90.0,
+                                  alignment: Alignment.center,
+                                  child: AdWidget(ad: _ad!),
+                                ),
+                              );
+                            } else {
+                            return Padding(
+                              padding:
+                                  const EdgeInsets.symmetric(horizontal: 6),
+                              child: GestureDetector(
+                                onTap: () {
+                                  // Navigator.push(
+                                  //     context,
+                                  //     MaterialPageRoute(
+                                  //         builder: (context) =>
+                                  //             CattleDetailsPage(_list, index)));
+                                },
+                                child: transType == "Expense" ? Card(
+                                  child: Column(
                                     children: [
-                                      Row(
-                                        children: [
-                                          SizedBox(width: 4,),
-                                          
-                                          Column(
-                                            crossAxisAlignment:
-                                                CrossAxisAlignment.start,
-                                            children: [
-                                              Text("${
-                                                expenseType == 'Category Expense' ?  provider.expenseList[index].selectedValueExpenseCategory : 
-                                                expenseType == 'Other (specify)' ?  provider.expenseList[index].otherExpense : '' }",
-                                                style: TextStyle(
-                                                  fontWeight: FontWeight.bold,
-                                                  fontSize: 15
-                                                ),),
-                                              SizedBox(
-                                                height: 5,
-                                              ),
-                                              Text("$date")
-                                            ],
-                                          ),
-                                        ],
+                                      Padding(
+                                        padding: const EdgeInsets.symmetric(
+                                            horizontal: 8),
+                                        child: Row(
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.spaceBetween,
+                                          children: [
+                                            Row(
+                                              children: [
+                                                SizedBox(
+                                                  width: 4,
+                                                ),
+                                                Column(
+                                                  crossAxisAlignment:
+                                                      CrossAxisAlignment.start,
+                                                  children: [
+                                                    Text(
+                                                      "${expenseType == 'Category Expense' ? provider.transactionList[newIndex].selectedValueCategory : expenseType == 'Other (specify)' ? provider.transactionList[newIndex].otherIncomeExpense : ''}",
+                                                      style: TextStyle(
+                                                          fontWeight:
+                                                              FontWeight.bold,
+                                                          fontSize: 15),
+                                                    ),
+                                                    SizedBox(
+                                                      height: 5,
+                                                    ),
+                                                    Text("$date")
+                                                  ],
+                                                ),
+                                              ],
+                                            ),
+                                            Row(
+                                              children: [
+                                                Column(
+                                                  children: [
+                                                    Container(
+                                                      child: Text(""),
+                                                    ),
+                                                    SizedBox(
+                                                      height: 30,
+                                                    ),
+                                                    Text(
+                                                      "$formatAmountEarned",
+                                                      style: TextStyle(
+                                                          fontSize: 18),
+                                                    ),
+                                                  ],
+                                                ),
+                                                SizedBox(
+                                                  width: 20,
+                                                ),
+                                                Column(
+                                                  mainAxisAlignment:
+                                                      MainAxisAlignment.end,
+                                                  children: [
+                                                    Padding(
+                                                      padding: const EdgeInsets
+                                                              .fromLTRB(
+                                                          0, 10, 0, 0),
+                                                      child: Icon(
+                                                          Icons.star_border),
+                                                    ),
+                                                    SizedBox(
+                                                      height: 15,
+                                                    ),
+                                                    popupMenuWidget(
+                                                        newIndex,
+                                                        provider
+                                                            .transactionList[newIndex]
+                                                            .id)
+                                                  ],
+                                                ),
+                                              ],
+                                            )
+                                          ],
+                                        ),
                                       ),
-                                      Row(
-                                        children: [
-                                          Column(
-                                            children: [
-                                              Container(
-                                                child: Text(""),
-                                              ),
-                                              SizedBox(
-                                                height: 30,
-                                              ),
-                                              Text(
-                                                "$formatAmountEarned",
-                                                style: TextStyle(fontSize: 18),
-                                              ),
-                                            ],
-                                          ),
-                                          SizedBox(
-                                            width: 20,
-                                          ),
-                                          Column(
-                                            mainAxisAlignment: MainAxisAlignment.end,
-                                            children: [
-                                              Padding(
-                                                padding: const EdgeInsets.fromLTRB(
-                                                    0, 10, 0, 0),
-                                                child: Icon(Icons.star_border),
-                                              ),
-                                              SizedBox(
-                                                height: 15,
-                                              ),
-                                              popupMenuWidget(index, provider.expenseList[index].id)
-                                            ],
-                                          ),
-                                        ],
-                                      )
                                     ],
                                   ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      );
-                    }),
-                    SizedBox(height: 60,)
-            ],
-          ),
-        )
-        ),
+                                ) : Container(),
+                              ),
+                            );
+                            }
+                          }),
+                      SizedBox(
+                        height: 60,
+                      )
+                    ],
+                  ),
+                )),
       floatingActionButton: GestureDetector(
         onTap: () {
-          Navigator.push(
-              context, MaterialPageRoute(builder: (context) => ExpensesForm()));
+           if (_isInterstitialAdReady) {
+            _interstitialAd?.show();
+          }
+          Navigator.push(context,
+              MaterialPageRoute(builder: (context) => IncomeFormTest()));
         },
         child: Container(
           width: 130,
@@ -168,8 +281,9 @@ class _ExpensesPageState extends State<ExpensesPage> {
       ),
     );
   }
+  
 
-   Widget popupMenuWidget(index, id) {
+  Widget popupMenuWidget(index, id) {
     var selectedValue;
     return PopupMenuButton(
         icon: Icon(
@@ -184,21 +298,28 @@ class _ExpensesPageState extends State<ExpensesPage> {
               Navigator.push(
                   context,
                   MaterialPageRoute(
-                      builder: (context) => ExpensesForm(index: index,)));
+                      builder: (context) => IncomeFormTest(
+                            index: index,
+                            transType: "Expense",
+                          )));
             } else if (selectedValue == "Delete") {
               _deleteEventDialog(id);
             }
           });
         },
         itemBuilder: (_) => [
-              PopupMenuItem(value: "Edit Event", child: Padding(
-                padding: const EdgeInsets.only(right: 60),
-                child: Text("Edit Event"),
-              )),
-              PopupMenuItem(value: "Delete", child: Padding(
-                 padding: const EdgeInsets.only(right: 60),
-                child: Text("Delete"),
-              )),
+              PopupMenuItem(
+                  value: "Edit Event",
+                  child: Padding(
+                    padding: const EdgeInsets.only(right: 60),
+                    child: Text("Edit Event"),
+                  )),
+              PopupMenuItem(
+                  value: "Delete",
+                  child: Padding(
+                    padding: const EdgeInsets.only(right: 60),
+                    child: Text("Delete"),
+                  )),
             ]);
   }
 
@@ -229,18 +350,15 @@ class _ExpensesPageState extends State<ExpensesPage> {
                         MaterialStateProperty.all<Color>(Colors.red),
                   ),
                   onPressed: () async {
-                    print("checking this now $id");
                     
-                    ExpenseService service = ExpenseService();
-                    var response = await service.deleteExpenseById(id);
+                   TransactionsService service = TransactionsService();
+                    var response = await service.deleteTransactionsById(id);
 
                     if (response > 0) {
-                      print("successfully deleted");
-                      await Provider.of<TransactionsProvider>(context, listen: false)
-                          .getAllExpensesRecord();
-                    } else {
-                      print("successfully failed");
-                    }
+                      await Provider.of<TransactionsProvider>(context,
+                              listen: false)
+                         .getAllTransactionsRecord();
+                    } else {}
 
                     Navigator.pop(context);
                   },
@@ -251,8 +369,7 @@ class _ExpensesPageState extends State<ExpensesPage> {
                 ),
               ],
               title: Text("Deleting expense!"),
-              content: Text(
-                  "Are you sure you want to delete this expense?"));
+              content: Text("Are you sure you want to delete this expense?"));
         });
   }
 }

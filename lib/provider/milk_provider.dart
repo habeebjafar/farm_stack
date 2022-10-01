@@ -6,6 +6,7 @@ class MilkProvider with ChangeNotifier{
 
   MilkService _milkService = MilkService();
   List<MilkModel> milkRecordList = [];
+   List<MilkModel> milkRecordListDateSearch = [];
 
   List<MilkModel> milkProducedRecordList = [];
   List<MilkModel> individualMilkProducedRecordList = [];
@@ -24,13 +25,14 @@ class MilkProvider with ChangeNotifier{
 
 
 
-  Future<List<MilkModel>> getAllMilkRecord() async {
+  Future<List<MilkModel>> getAllMilkRecord({DateTime? dateSearch, DateTime? dateSearchTwo}) async {
 
     var response = await _milkService.getAllMilkRecord();
     print(response);
      milkProducedRecordList.clear();
      milkRecordList.clear();
-    // individualMilkProducedRecordList.clear();
+     milkRecordListDateSearch.clear();
+    individualMilkProducedRecordList.clear();
     // milkRecordList.clear();
  
 totalMilkedProduced = 0.0;
@@ -51,19 +53,71 @@ totalMilkedUsed = 0.0;
 
          //totalMilkedProduced = 0.0;
 
-        totalMilkedProduced = totalMilkedProduced + double.parse(model.milkTotalProduced.toString());
-        totalMilkedUsed =  totalMilkedUsed + double.parse(model.milkTotalUsed.toString());
+        
 
         milkRecordList.add(model);
 
        
-       milkProducedRecordList.add(model);
+      if (dateSearch != null && dateSearchTwo == null) {
+        if (dateSearch.compareTo(DateTime.parse(model.milkDate!)) <= 0) {
 
-       if(model.milkType == "Individual Milk"){
+           milkRecordListDateSearch.add(model);
+
+           totalMilkedProduced = totalMilkedProduced + double.parse(model.milkTotalProduced.toString());
+        totalMilkedUsed =  totalMilkedUsed + double.parse(model.milkTotalUsed.toString());
+
+         milkProducedRecordList.add(model);
+
+           if(model.milkType == "Individual Milk"){
 
          individualMilkProducedRecordList.add(model);
 
        }
+         
+        }
+      }
+
+      if (dateSearchTwo != null && dateSearch == null) {
+        DateTime date = new  DateTime.now();
+        DateTime currentDate = new DateTime(date.year, date.month, 01);
+        if (dateSearchTwo.compareTo(DateTime.parse(model.milkDate!)) <= 0 && currentDate.compareTo(DateTime.parse(model.milkDate!)) > 0 ) {
+
+           milkRecordListDateSearch.add(model);
+
+           totalMilkedProduced = totalMilkedProduced + double.parse(model.milkTotalProduced.toString());
+        totalMilkedUsed =  totalMilkedUsed + double.parse(model.milkTotalUsed.toString());
+
+         milkProducedRecordList.add(model);
+
+           if(model.milkType == "Individual Milk"){
+
+         individualMilkProducedRecordList.add(model);
+
+       }
+         
+        }
+      }
+
+      if (dateSearch != null && dateSearchTwo != null) {
+        if (dateSearch.compareTo(DateTime.parse(model.milkDate!)) <= 0 &&
+            dateSearchTwo.compareTo(DateTime.parse(model.milkDate!)) >= 0) {
+
+               milkRecordListDateSearch.add(model);
+
+               totalMilkedProduced = totalMilkedProduced + double.parse(model.milkTotalProduced.toString());
+        totalMilkedUsed =  totalMilkedUsed + double.parse(model.milkTotalUsed.toString());
+
+         milkProducedRecordList.add(model);
+
+               if(model.milkType == "Individual Milk"){
+
+         individualMilkProducedRecordList.add(model);
+
+       }
+         
+        }
+      }
+
     
     });
 
@@ -80,6 +134,7 @@ totalMilkedUsed = 0.0;
 
       highestProductiveCow = individualMilkProducedRecordList.length > 0 ? individualMilkProducedRecordList[individualMilkProducedRecordList.length-1].cowMilked.toString() : "";
       leastProductiveCow = individualMilkProducedRecordList.length > 0 ? individualMilkProducedRecordList[0].cowMilked.toString() : "";
+
    
     notifyListeners();
     return milkRecordList;

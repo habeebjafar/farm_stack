@@ -6,7 +6,7 @@ class FarmNoteModel{
 
   createMap(){
     return{
-      if(id != null) "id" : id.toString(),
+       "id" : this.id,
       "title": this.title,
       "message": this.message,
       "date": this.date

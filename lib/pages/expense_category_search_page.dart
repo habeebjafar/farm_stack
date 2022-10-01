@@ -24,6 +24,15 @@ class _ExpenseCategorySearchPageState extends State<ExpenseCategorySearchPage> {
      _getAllExpenseCategories(); 
   }
 
+    @override
+  void dispose(){
+    
+     _incomeCategoryName.dispose();
+    
+    super.dispose();
+    
+  }
+
 
   
  

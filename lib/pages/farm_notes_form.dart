@@ -21,8 +21,25 @@ class _FarmNoteFormState extends State<FarmNoteForm> {
   void initState(){
     super.initState();
  provider = Provider.of<FarmNoteProvider>(context, listen: false);
- if(this.widget.index != null) _editValues();
+ initFarmData();
+  if(this.widget.index != null) _editValues();
+ 
+  }
 
+  void initFarmData() async{
+    await provider.getAllFarmNotes();
+    
+  }
+
+    @override
+  void dispose(){
+    
+     titleController.dispose();
+     messageController.dispose();
+   
+    
+    super.dispose();
+    
   }
 
   
@@ -41,7 +58,7 @@ class _FarmNoteFormState extends State<FarmNoteForm> {
               onPressed: () async{
 
                 var response = await provider.saveFarmNote(
-                  titleController.text, messageController.text, updateId: provider.farmNoteList[this.widget.index].id
+                  titleController.text, messageController.text, updateId: this.widget.index != null ? provider.farmNoteList[this.widget.index].id : null
 
                 );
                 if(response){

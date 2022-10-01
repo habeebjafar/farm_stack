@@ -5,6 +5,7 @@ import 'package:farmapp/pages/farm_notes.dart';
 import 'package:farmapp/pages/farm_setup_page.dart';
 import 'package:farmapp/pages/milk_record_page.dart';
 import 'package:farmapp/pages/newhomepage.dart';
+import 'package:farmapp/pages/payment_test.dart';
 import 'package:farmapp/pages/pie_chart_page.dart';
 import 'package:farmapp/pages/report_page.dart';
 import 'package:farmapp/pages/transaction_page.dart';
@@ -103,7 +104,8 @@ class _HomePageState extends State<HomePage> {
                   onTap: () {
                     Navigator.pop(context);
                     Navigator.push(context,
-                        MaterialPageRoute(builder: (context) => EventsReportPage()));
+                        // MaterialPageRoute(builder: (context) => EventsReportPage()));
+                         MaterialPageRoute(builder: (context) => PaymentTest()));
                   },
                 ),
 

@@ -4,7 +4,11 @@ import 'package:farmapp/pages/cattle_form_page.dart';
 import 'package:farmapp/pages/search_implementation.dart';
 import 'package:farmapp/provider/cattle_provider.dart';
 import 'package:flutter/material.dart';
+import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
+import '../ad_helper.dart';
 
 class CattlePage extends StatefulWidget {
   @override
@@ -12,21 +16,99 @@ class CattlePage extends StatefulWidget {
 }
 
 class _CattlePageState extends State<CattlePage> {
+  static final _kAdIndex = 1;
 
-  bool firstTime = true;
+  BannerAd? _ad;
+
+  int _getDestinationItemIndex(int rawIndex) {
+    if (rawIndex >= _kAdIndex && _ad != null) {
+      return rawIndex - 1;
+    }
+    return rawIndex;
+  }
+
+  InterstitialAd? _interstitialAd;
+
+  bool _isInterstitialAdReady = false;
+
+  
+  void _loadInterstitialAd() {
+    InterstitialAd.load(
+      adUnitId: AdHelper.interstitialAdUnitId,
+      request: AdRequest(),
+      adLoadCallback: InterstitialAdLoadCallback(
+        onAdLoaded: (ad) {
+          this._interstitialAd = ad;
+
+          ad.fullScreenContentCallback = FullScreenContentCallback(
+            onAdDismissedFullScreenContent: (ad) {},
+          );
+
+          _isInterstitialAdReady = true;
+        },
+        onAdFailedToLoad: (err) {
+          print('Failed to load an interstitial ad: ${err.message}');
+          _isInterstitialAdReady = false;
+        },
+      ),
+    );
+  }
+
+  late BannerAd _bannerAd;
 
   var provider;
   @override
   void initState() {
     super.initState();
 
+    _loadInterAds();
+
     _groupSelectedValue = "All Active";
-    //  provider = Provider.of<CattleProvider>(context, listen: true);
-    //   provider.getAllCattles(_groupSelectedValue);
     
+    _bannerAd = BannerAd(
+      adUnitId: AdHelper.bannerAdUnitId,
+      size: AdSize.fullBanner,
+      request: AdRequest(),
+      listener: BannerAdListener(
+        onAdLoaded: (ad) {
+          setState(() {
+            _ad = ad as BannerAd;
+          });
+        },
+        onAdFailedToLoad: (ad, error) {
+          ad.dispose();
+        },
+      ),
+    );
+
+    _loadBannerAds();
   }
 
+  _loadInterAds() async {
+    SharedPreferences _prefs = await SharedPreferences.getInstance();
+    //bool _isSubscribed;
+    int? isSubscribed = _prefs.getInt("subscribed");
+    if (isSubscribed != 1) {
+      _loadInterstitialAd();
+    }
+  }
 
+   _loadBannerAds() async {
+    SharedPreferences _prefs = await SharedPreferences.getInstance();
+    //bool _isSubscribed;
+    int? isSubscribed = _prefs.getInt("subscribed");
+    if (isSubscribed != 1) {
+      _bannerAd.load();
+    }
+  }
+
+  @override
+  void dispose() {
+    _interstitialAd?.dispose();
+    _ad?.dispose();
+
+    super.dispose();
+  }
 
   List<DropdownMenuItem<String>> get dropdownItems {
     List<DropdownMenuItem<String>> menuItems = [
@@ -37,28 +119,27 @@ class _CattlePageState extends State<CattlePage> {
   }
 
   String selectedValue = "View Record";
-  
+
   String? _groupSelectedValue;
 
   @override
   Widget build(BuildContext context) {
-   
-     provider = Provider.of<CattleProvider>(context, listen: false);
+    provider = Provider.of<CattleProvider>(context, listen: false);
     provider.getAllCattles("All Active");
-    print("Checking the list for ${provider.cattleList}");
-   
 
     return Scaffold(
       appBar: AppBar(
         title: Text("Cattle"),
         actions: [
-          IconButton(onPressed: () {
-            // => showSearch(context: context, delegate: Search())
-            Navigator.push(context, 
-            MaterialPageRoute(builder: (context) => SearchImplementation()));
-            },
-           icon: Icon(Icons.search)),
-
+          IconButton(
+              onPressed: () {
+                // => showSearch(context: context, delegate: Search())
+                Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (context) => SearchImplementation()));
+              },
+              icon: Icon(Icons.search)),
           popupMenuWidget()
         ],
       ),
@@ -67,7 +148,6 @@ class _CattlePageState extends State<CattlePage> {
               .getAllCattles(_groupSelectedValue),
           builder: (BuildContext context,
               AsyncSnapshot<List<CattleModel>> snapShot) {
-            
             if (snapShot.connectionState == ConnectionState.waiting) {
               return Scaffold(
                 body: Center(
@@ -75,166 +155,180 @@ class _CattlePageState extends State<CattlePage> {
                 ),
               );
             } else {
-            
               return Consumer<CattleProvider>(
-                builder: (_, newPro, __) => newPro.cattleList.length == 0 ? Center(
-          child: Text("No cattle recorded yet!",
-          style: TextStyle(
-            fontSize: 18,
-            color: Colors.orange
-          ),)
-        ) : ListView.builder(
-                    itemCount: newPro.cattleList.length,
-                    itemBuilder: (BuildContext context, int index) {
+                  builder: (_, newPro, __) => newPro.cattleList.length == 0
+                       ? Center(
+                          child: Text(
+                          "No cattle recorded yet!",
+                          style: TextStyle(fontSize: 18, color: Colors.orange),
+                         ))
+                       : ListView.builder(
+                          itemCount:
+                              newPro.cattleList.length + (_ad != null ? 1 : 0),
+                          itemBuilder: (BuildContext context, int index) {
+                            if (_ad != null && index == _kAdIndex) {
+                              return Card(
+                                child: Container(
+                                  width: _ad!.size.width.toDouble(),
+                                  padding: EdgeInsets.symmetric(horizontal: 6),
+                                  height: 90.0,
+                                  alignment: Alignment.center,
+                                  child: AdWidget(ad: _ad!),
+                                ),
+                              );
+                            } else {
+                              final newIndex = _getDestinationItemIndex(index);
+                              String? cattleStageImg =
+                                  newPro.cattleList[newIndex].cattleStageImg;
 
-                      String? cattleStageImg = newPro.cattleList[index].cattleStageImg;
-                     
-                      return Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 6),
-                        child: GestureDetector(
-                          onTap: () {
-                            Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                    builder: (context) =>
-                                        CattleDetailsPage(newPro.cattleList[index].id!)));
-                          },
-                          child: Card(
-                            child: Column(
-                              children: [
-                                Padding(
-                                  padding:
-                                      const EdgeInsets.symmetric(horizontal: 8),
-                                  child: Row(
-                                    mainAxisAlignment:
-                                        MainAxisAlignment.spaceBetween,
-                                    children: [
-                                      Row(
-                                        children: [
-                                          Image.asset(
-                                            cattleStageImg!,
-                                            width: 70,
-                                            height: 70,
-                                          ),
-                                          SizedBox(
-                                            width: 20,
-                                          ),
-                                          Column(
-                                            crossAxisAlignment:
-                                                CrossAxisAlignment.start,
-                                            children: [
-                                              Text(
-                                                  "${newPro.cattleList[index].cattleTagNo}"),
-                                              SizedBox(
-                                                height: 5,
-                                              ),
-                                              Text(
-                                                  "${newPro.cattleList[index].cattleName}")
-                                            ],
-                                          ),
-                                        ],
-                                      ),
-                                      Row(
-                                        children: [
-                                          Column(
+                              return Padding(
+                                padding:
+                                    const EdgeInsets.symmetric(horizontal: 6),
+                                child: GestureDetector(
+                                  onTap: () {
+                                    Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                            builder: (context) =>
+                                                CattleDetailsPage(newPro
+                                                    .cattleList[newIndex]
+                                                    .id!)));
+                                  },
+                                  child: Card(
+                                    child: Column(
+                                      children: [
+                                        Padding(
+                                          padding: const EdgeInsets.symmetric(
+                                              horizontal: 8),
+                                          child: Row(
                                             mainAxisAlignment:
-                                                MainAxisAlignment.end,
-                                            crossAxisAlignment:
-                                                CrossAxisAlignment.end,
+                                                MainAxisAlignment.spaceBetween,
                                             children: [
-                                              Padding(
-                                                padding:
-                                                    const EdgeInsets.fromLTRB(
-                                                        0, 10, 0, 0),
-                                                child: Icon(Icons.star_border),
-                                              ),
-                                              SizedBox(
-                                                height: 15,
-                                              ),
-              
-                                              Stack(
+                                              Row(
                                                 children: [
-                                                  Container(
-                                                    //color: Colors.red,
-                                                    // width: 50,
-                                                    child: DropdownButton(
-                                                        icon:
-                                                            Icon(Icons.more_vert),
-                                                        //value: selectedValue,
-                                                        //itemHeight: 50,
-                                                        underline: Container(),
-                                                        isExpanded: false,
-                                                        onChanged:
-                                                            (String? newValue) {
-                                                          setState(() {
-                                                            selectedValue =
-                                                                newValue!;
-                                                            if (selectedValue ==
-                                                                "View Record") {
-                                                              Navigator.push(
-                                                                  context,
-                                                                  MaterialPageRoute(
-                                                                      builder: (context) =>
-                                                                          CattleDetailsPage(newPro.cattleList[index].id!)));
-                                                            }
-              
-                                                            if (selectedValue ==
-                                                                "Edit Record") {
-                                                              Navigator.push(
-                                                                  context,
-                                                                  MaterialPageRoute(
-                                                                      builder: (context) =>
-                                                                          CattleFormPage(newPro.cattleList[index].id!)));
-                                                            }
-                                                          });
-                                                        },
-                                                        items: dropdownItems),
+                                                  Image.asset(
+                                                    cattleStageImg!,
+                                                    width: 70,
+                                                    height: 70,
                                                   ),
-                                                  Positioned(
-                                                    //left: 20,
-                                                    top: 13,
-                                                    bottom: 10,
-                                                    child: Text(
-                                                      "${newPro.cattleList[index].cattleGender}",
-                                                      style:
-                                                          TextStyle(fontSize: 18),
-                                                    ),
-                                                  )
+                                                  SizedBox(
+                                                    width: 20,
+                                                  ),
+                                                  Column(
+                                                    crossAxisAlignment:
+                                                        CrossAxisAlignment
+                                                            .start,
+                                                    children: [
+                                                      Text(
+                                                          "${newPro.cattleList[newIndex].cattleTagNo}"),
+                                                      SizedBox(
+                                                        height: 5,
+                                                      ),
+                                                      Text(
+                                                          "${newPro.cattleList[newIndex].cattleName}")
+                                                    ],
+                                                  ),
+                                                ],
+                                              ),
+                                              Row(
+                                                children: [
+                                                  Column(
+                                                    mainAxisAlignment:
+                                                        MainAxisAlignment.end,
+                                                    crossAxisAlignment:
+                                                        CrossAxisAlignment.end,
+                                                    children: [
+                                                      Padding(
+                                                        padding:
+                                                            const EdgeInsets
+                                                                    .fromLTRB(
+                                                                0, 10, 0, 0),
+                                                        child: Icon(
+                                                            Icons.star_border),
+                                                      ),
+                                                      SizedBox(
+                                                        height: 15,
+                                                      ),
+
+                                                      Stack(
+                                                        children: [
+                                                          Container(
+                                                            //color: Colors.red,
+                                                            // width: 50,
+                                                            child:
+                                                                DropdownButton(
+                                                                    icon: Icon(Icons
+                                                                        .more_vert),
+                                                                    //value: selectedValue,
+                                                                    //itemHeight: 50,
+                                                                    underline:
+                                                                        Container(),
+                                                                    isExpanded:
+                                                                        false,
+                                                                    onChanged:
+                                                                        (String?
+                                                                            newValue) {
+                                                                      setState(
+                                                                          () {
+                                                                        selectedValue =
+                                                                            newValue!;
+                                                                        if (selectedValue ==
+                                                                            "View Record") {
+                                                                          Navigator.push(
+                                                                              context,
+                                                                              MaterialPageRoute(builder: (context) => CattleDetailsPage(newPro.cattleList[newIndex].id!)));
+                                                                        }
+
+                                                                        if (selectedValue ==
+                                                                            "Edit Record") {
+                                                                          Navigator.push(
+                                                                              context,
+                                                                              MaterialPageRoute(builder: (context) => CattleFormPage(newPro.cattleList[newIndex].id!)));
+                                                                        }
+                                                                      });
+                                                                    },
+                                                                    items:
+                                                                        dropdownItems),
+                                                          ),
+                                                          Positioned(
+                                                            //left: 20,
+                                                            top: 13,
+                                                            bottom: 10,
+                                                            child: Text(
+                                                              "${newPro.cattleList[newIndex].cattleGender}",
+                                                              style: TextStyle(
+                                                                  fontSize: 18),
+                                                            ),
+                                                          )
+                                                        ],
+                                                      )
+                                                      // IconButton(
+                                                      //     onPressed: () {},
+                                                      //     icon: Icon(Icons.more_vert)
+                                                      //     )
+                                                    ],
+                                                  ),
                                                 ],
                                               )
-                                              // IconButton(
-                                              //     onPressed: () {},
-                                              //     icon: Icon(Icons.more_vert)
-                                              //     )
                                             ],
                                           ),
-                                        ],
-                                      )
-                                    ],
+                                        ),
+                                      ],
+                                    ),
                                   ),
                                 ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      );
-                    })
-
-                );
-              
-                
-              
+                              );
+                            }
+                          }));
             }
           }),
-
-    
-
       floatingActionButton: GestureDetector(
         onTap: () {
-          Navigator.push(
-              context,
-              MaterialPageRoute(
-                  builder: (context) => CattleFormPage(-1)));
+          if (_isInterstitialAdReady) {
+            _interstitialAd?.show();
+          }
+          Navigator.push(context,
+              MaterialPageRoute(builder: (context) => CattleFormPage(-1)));
         },
         child: Container(
           width: 110,
@@ -264,25 +358,21 @@ class _CattlePageState extends State<CattlePage> {
   }
 
   _groupSelectedValueOnchanged(String? value) async {
-  
     setState(() {
       _groupSelectedValue = value!;
     });
-
 
     Navigator.pop(context);
     // });
   }
 
   Widget popupMenuWidget() {
-    
     return PopupMenuButton(
       //child: Text("Radio PopupMenuBotton"),
       onSelected: (value) async {
         setState(() {
           _groupSelectedValue = value as String?;
         });
-     
       },
       icon: Icon(Icons.filter_list),
       itemBuilder: (context) => [

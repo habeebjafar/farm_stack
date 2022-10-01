@@ -36,6 +36,11 @@ class Repository {
     return con.rawQuery("SELECT * FROM $table WHERE id = $itemId");
   }
 
+   getItemsByColumnName(table, date) async {
+    var con = await database;
+    return con.rawQuery("SELECT * FROM $table WHERE date = $date");
+  }
+
   updateItem(table, data) async {
     var con = await database;
     return con.update(

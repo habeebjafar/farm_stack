@@ -28,8 +28,25 @@ var provider ;
   void initState() {
      provider = Provider.of<CattleProvider>(context, listen: false);
     provider.getCattleById(this.widget.index);
+
+    print("print this cattle ${provider.getCattleById(this.widget.index)}");
+
+
     if(this.widget.eventIndex != null)  _editValues();
     super.initState();
+  }
+
+
+    @override
+  void dispose(){
+    
+     eventDateController.dispose();
+     noteController.dispose();
+     nameOfMedicineController.dispose();
+    
+    
+    super.dispose();
+    
   }
 
   TextEditingController eventDateController = TextEditingController();
@@ -122,7 +139,7 @@ var provider ;
   _saveEvent() async {
     var provider = Provider.of<CattleProvider>(context, listen: false);
     provider.getCattleById(this.widget.index);
-
+    
     var eventModel = EventIndividualModel();
 
     eventModel.eventDate = eventDateController.text;
@@ -166,12 +183,7 @@ var provider ;
 
     final snackBar = SnackBar(
       content: const Text('Please fill all the fields marked with (*)'),
-      // action: SnackBarAction(
-      //   label: 'Undo',
-      //   onPressed: () {
-      //     // Some code to undo the change.
-      //   },
-      // ),
+   
       duration: Duration(seconds: 2),
     );
     ScaffoldMessenger.of(context).showSnackBar(snackBar);
@@ -200,172 +212,190 @@ var provider ;
               ))
         ],
       ),
-      body: Consumer<CattleProvider>(builder: (_, cPro, __) => SingleChildScrollView(
-          padding: EdgeInsets.all(10),
-          child: Form(
-             key: globalKey,
-            child: Column(
-              children: [
-               
-                Container(
-                  padding: EdgeInsets.fromLTRB(2, 7, 0, 7),
-                  width: double.infinity,
-                  color: Theme.of(context).primaryColor,
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Row(
-                        children: [
-                          Icon(
-                            Icons.calendar_today,
-                            color: Colors.white70,
-                          ),
-                          SizedBox(width: 10),
-                          Text(
-                            "${cPro.singleCattle[0]['cattleTagNo']}",
-                            style: TextStyle(
-                                fontSize: 16,
-                                color: Colors.white,
-                                fontWeight: FontWeight.bold
-                                ),
-                          ),
-          
-                             SizedBox(width: 10),
-                          Text(
-                            "-",
-                            style: TextStyle(
-                                fontSize: 16,
-                                color: Colors.white,
-                                fontWeight: FontWeight.bold
-                                ),
-                          ),
-          
-                             SizedBox(width: 10),
-                          Text(
-                            "${cPro.singleCattle[0]['cattleGender']}",
-                            style: TextStyle(
-                                fontSize: 16,
-                                color: Colors.white,
-                                fontWeight: FontWeight.bold
-                                ),
-                          ),
-                             SizedBox(width: 5),
-                          Text(
-                            "${cPro.singleCattle[0]['cattleStage']}",
-                            style: TextStyle(
-                                fontSize: 16,
-                                color: Colors.white,
-                                fontWeight: FontWeight.bold
-                                ),
-                          ),
-                        ],
-                      ),
-                   
-                    ],
-                  ),
-                ),
-                SizedBox(
-                  height: 15,
-                ),
-                TextFormField(
-                  controller: eventDateController,
-                   validator: (input) => input!.length < 1 ? "Required" : null,
-                  onTap: () {
-                    _selectTodoDate(context, 1);
-                  },
-                  readOnly: true,
-                  autofocus: false,
-                  // enabled: false,
-                  decoration: InputDecoration(
-                      //hintText: 'YY-MM-DD',
-                
-                      labelText: 'Event date.*',
-                      contentPadding: EdgeInsets.fromLTRB(20.0, 15.0, 20.0, 15.0),
-                      border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(5.0)),
-                      prefixIcon: InkWell(
-                          onTap: () {
-                            //  _selectTodoDate(context);
-                          },
-                          child: Icon(Icons.calendar_today))),
-                ),
-                SizedBox(
-                  height: 20,
-                ),
-                DropdownButtonFormField(
-                    style: TextStyle(fontSize: 16.0, color: Colors.black),
-                    icon: Icon(
-                      Icons.arrow_drop_down,
-                      size: 30,
+      body: FutureBuilder(
+      future: provider.getCattleById(this.widget.index),
+      builder: (BuildContext context, snapShot) {
+        if (snapShot.connectionState == ConnectionState.waiting) {
+          return Scaffold(
+            body: Center(
+              child: CircularProgressIndicator(),
+            ),
+          );
+        } else {
+          if (provider.singleCattle.length == 0) {
+            return Container(
+              child: Text("No data"),
+            );
+          }
+          return Consumer<CattleProvider>(builder: (_, cPro, __) => SingleChildScrollView(
+            padding: EdgeInsets.all(10),
+            child: Form(
+               key: globalKey,
+              child: Column(
+                children: [
+                 
+                  Container(
+                    padding: EdgeInsets.fromLTRB(2, 7, 0, 7),
+                    width: double.infinity,
+                    color: Theme.of(context).primaryColor,
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.calendar_today,
+                              color: Colors.white70,
+                            ),
+                            SizedBox(width: 10),
+                            Text(
+                              "${cPro.singleCattle[0]['cattleTagNo']}",
+                              style: TextStyle(
+                                  fontSize: 16,
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold
+                                  ),
+                            ),
+            
+                               SizedBox(width: 10),
+                            Text(
+                              "-",
+                              style: TextStyle(
+                                  fontSize: 16,
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold
+                                  ),
+                            ),
+            
+                               SizedBox(width: 10),
+                            Text(
+                              "${cPro.singleCattle[0]['cattleGender']}",
+                              style: TextStyle(
+                                  fontSize: 16,
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold
+                                  ),
+                            ),
+                               SizedBox(width: 5),
+                            Text(
+                              "${cPro.singleCattle[0]['cattleStage']}",
+                              style: TextStyle(
+                                  fontSize: 16,
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold
+                                  ),
+                            ),
+                          ],
+                        ),
+                     
+                      ],
                     ),
+                  ),
+                  SizedBox(
+                    height: 15,
+                  ),
+                  TextFormField(
+                    controller: eventDateController,
+                     validator: (input) => input!.length < 1 ? "Required" : null,
+                    onTap: () {
+                      _selectTodoDate(context, 1);
+                    },
+                    readOnly: true,
+                    autofocus: false,
+                    // enabled: false,
+                    decoration: InputDecoration(
+                        //hintText: 'YY-MM-DD',
+                  
+                        labelText: 'Event date.*',
+                        contentPadding: EdgeInsets.fromLTRB(20.0, 15.0, 20.0, 15.0),
+                        border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(5.0)),
+                        prefixIcon: InkWell(
+                            onTap: () {
+                              //  _selectTodoDate(context);
+                            },
+                            child: Icon(Icons.calendar_today))),
+                  ),
+                  SizedBox(
+                    height: 20,
+                  ),
+                  DropdownButtonFormField(
+                      style: TextStyle(fontSize: 16.0, color: Colors.black),
+                      icon: Icon(
+                        Icons.arrow_drop_down,
+                        size: 30,
+                      ),
+                      decoration: InputDecoration(
+                          contentPadding: EdgeInsets.fromLTRB(20.0, 15.0, 20.0, 15.0),
+                          //hintText: "Cattle name. *",
+                          //labelText: "-Select milk type-*",
+                          border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(5.0))),
+                      //dropdownColor: Colors.blueAccent,
+                      value: selectedValue,
+                      onChanged: (String? newValue) {
+                        setState(() {
+                          selectedValue = newValue!;
+                          if (selectedValue == "Other") {
+                            otherLabel = "Name of event. *";
+                          } else {
+                            otherLabel = "Name of medicine given.*";
+                          }
+                          print("checking seleced value $selectedValue");
+                        });
+                      },
+                      items: dropdownItems),
+                  SizedBox(
+                    height: 20,
+                  ),
+                  selectedValue == "Vacination/Injection" ||
+                          selectedValue == "Deworming" ||
+                          selectedValue == "Treatment/Medication" ||
+                          selectedValue == "Other"
+                      ? TextFormField(
+                          controller: nameOfMedicineController,
+                           validator: (input) => input!.length < 1 ? "Required" : null,
+                          style: TextStyle(fontSize: 20.0),
+                          decoration: InputDecoration(
+                              contentPadding:
+                                  EdgeInsets.fromLTRB(20.0, 15.0, 20.0, 15.0),
+                              //hintText: "Cattle name. *",
+                              labelText: otherLabel,
+                              //hintText: "2",
+                              border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(5.0))),
+                        )
+                      : Container(),
+                  selectedValue == "Vacination/Injection" ||
+                          selectedValue == "Deworming" ||
+                          selectedValue == "Treatment/Medication" ||
+                          selectedValue == "Other"
+                      ? SizedBox(
+                          height: 20,
+                        )
+                      : Container(),
+                  TextFormField(
+                    controller: noteController,
+                    maxLines: null,
+                    minLines: 4,
+                    style: TextStyle(fontSize: 20.0),
                     decoration: InputDecoration(
                         contentPadding: EdgeInsets.fromLTRB(20.0, 15.0, 20.0, 15.0),
                         //hintText: "Cattle name. *",
-                        //labelText: "-Select milk type-*",
+                        labelText: "Write some notes ...",
                         border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(5.0))),
-                    //dropdownColor: Colors.blueAccent,
-                    value: selectedValue,
-                    onChanged: (String? newValue) {
-                      setState(() {
-                        selectedValue = newValue!;
-                        if (selectedValue == "Other") {
-                          otherLabel = "Name of event. *";
-                        } else {
-                          otherLabel = "Name of medicine given.*";
-                        }
-                        print("checking seleced value $selectedValue");
-                      });
-                    },
-                    items: dropdownItems),
-                SizedBox(
-                  height: 20,
-                ),
-                selectedValue == "Vacination/Injection" ||
-                        selectedValue == "Deworming" ||
-                        selectedValue == "Treatment/Medication" ||
-                        selectedValue == "Other"
-                    ? TextFormField(
-                        controller: nameOfMedicineController,
-                         validator: (input) => input!.length < 1 ? "Required" : null,
-                        style: TextStyle(fontSize: 20.0),
-                        decoration: InputDecoration(
-                            contentPadding:
-                                EdgeInsets.fromLTRB(20.0, 15.0, 20.0, 15.0),
-                            //hintText: "Cattle name. *",
-                            labelText: otherLabel,
-                            //hintText: "2",
-                            border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(5.0))),
-                      )
-                    : Container(),
-                selectedValue == "Vacination/Injection" ||
-                        selectedValue == "Deworming" ||
-                        selectedValue == "Treatment/Medication" ||
-                        selectedValue == "Other"
-                    ? SizedBox(
-                        height: 20,
-                      )
-                    : Container(),
-                TextFormField(
-                  controller: noteController,
-                  maxLines: null,
-                  minLines: 4,
-                  style: TextStyle(fontSize: 20.0),
-                  decoration: InputDecoration(
-                      contentPadding: EdgeInsets.fromLTRB(20.0, 15.0, 20.0, 15.0),
-                      //hintText: "Cattle name. *",
-                      labelText: "Write some notes ...",
-                      border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(5.0))),
-                ),
-                SizedBox(
-                  height: 20,
-                ),
-              ],
+                  ),
+                  SizedBox(
+                    height: 20,
+                  ),
+                ],
+              ),
             ),
-          ),
-        ),
+          )
+        );
+        }
+        }
       ),
     );
   }

@@ -2,6 +2,7 @@ import 'package:farmapp/models/cattle_model.dart';
 import 'package:farmapp/models/milk_model.dart';
 import 'package:farmapp/provider/milk_provider.dart';
 import 'package:farmapp/services/cattle_service.dart';
+import 'package:farmapp/services/milk_service.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
@@ -31,6 +32,18 @@ class _MilkFormPageState extends State<MilkFormPage> {
     noOfCattleMilkedController.text = "1";
 
     if (this.widget.index != null) _editValues();
+  }
+
+  @override
+  void dispose(){
+    
+     noOfCattleMilkedController.dispose();
+     totalMilkUsedController.dispose();
+     totalMilkProducedController.dispose();
+     milkingDateController.dispose();
+    
+    super.dispose();
+    
   }
 
   _getAllCattles() async {
@@ -128,6 +141,7 @@ class _MilkFormPageState extends State<MilkFormPage> {
 
   _saveMilk() async {
     var milkModel = MilkModel();
+    MilkService service = MilkService();
     milkModel.milkDate = milkingDateController.text;
     milkModel.milkTotalUsed = totalMilkUsedController.text;
     milkModel.milkTotalProduced = totalMilkProducedController.text;
@@ -138,20 +152,23 @@ class _MilkFormPageState extends State<MilkFormPage> {
        milkModel.noOfCattleMilked = selectedValue == "Bulk Milk" ? noOfCattleMilkedController.text : "";
 
 
+    var response;
     if (this.widget.index != null) {
       var provider = Provider.of<MilkProvider>(context, listen: false);
       milkModel.id =   provider.milkRecordList[this.widget.index].id!;
+      response = await service.updateMilk(milkModel);
 
     } else {
+      response = await service.saveMilk(milkModel);
     }
 
-    // if (response > 0) {
-    //   print("added successfully $response");
-    //   Navigator.pushReplacement(
-    //       context, MaterialPageRoute(builder: (_) => MilkRecordPage()));
-    // } else {
-    //   print("no value added");
-    // }
+    if (response > 0) {
+      print("added successfully $response");
+      // Navigator.pushReplacement(
+      //     context, MaterialPageRoute(builder: (_) => MilkRecordPage()));
+    } else {
+      print("no value added");
+    }
   }
   
       bool validateAndSave() {
@@ -186,6 +203,7 @@ class _MilkFormPageState extends State<MilkFormPage> {
                    await milkProvider.getAllMilkRecord();
                    
                    Navigator.pop(context);
+                  
 
                  }
                

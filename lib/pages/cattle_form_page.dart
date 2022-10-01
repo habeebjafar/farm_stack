@@ -1,11 +1,13 @@
-
-
 import 'package:farmapp/models/cattle_breed_model.dart';
 import 'package:farmapp/provider/cattle_provider.dart';
 import 'package:farmapp/services/cattle_breed_service.dart';
 import 'package:flutter/material.dart';
+import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
+import '../ad_helper.dart';
 
 class CattleFormPage extends StatefulWidget {
   final int index;
@@ -17,14 +19,44 @@ class CattleFormPage extends StatefulWidget {
 }
 
 class _CattleFormPageState extends State<CattleFormPage> {
+
+  
+  late BannerAd _bannerAd;
+  bool _isBannerAdReady = false;
+
+
    GlobalKey<FormState> globalKey = GlobalKey<FormState>();
 
   var provider;
   var cattleBreedId;
 
+  // InterstitialAd _interstitialAd = InterstitialAd. ;
+
   @override
   void initState() {
     super.initState();
+  
+  _bannerAd = BannerAd(
+    adUnitId: AdHelper.bannerAdUnitId,
+    request: AdRequest(),
+    size: AdSize.banner,
+    listener: BannerAdListener(
+      onAdLoaded: (_) {
+        setState(() {
+          _isBannerAdReady = true;
+        });
+      },
+      onAdFailedToLoad: (ad, err) {
+        print('Failed to load a banner ad: ${err.message}');
+        _isBannerAdReady = false;
+        ad.dispose();
+      },
+    ),
+  );
+
+  _loadBannerAds();
+
+
     provider = Provider.of<CattleProvider>(context, listen: false);
 
     if (this.widget.index != -1) {
@@ -34,6 +66,17 @@ class _CattleFormPageState extends State<CattleFormPage> {
     _getAllCattleBreed();
     editvalue();
   }
+
+   _loadBannerAds() async {
+    SharedPreferences _prefs = await SharedPreferences.getInstance();
+    //bool _isSubscribed;
+    int? isSubscribed = _prefs.getInt("subscribed");
+    if (isSubscribed != 1) {
+      _bannerAd.load();
+    }
+  }
+
+
 
   TextEditingController cattleNameController = TextEditingController();
   TextEditingController cattleTagNoController = TextEditingController();
@@ -126,6 +169,27 @@ class _CattleFormPageState extends State<CattleFormPage> {
       });
     }
   }
+
+    @override
+void dispose() {
+
+  _bannerAd.dispose();
+  cattleNameController.dispose();
+  cattleTagNoController.dispose();
+  cattleWeightController.dispose();
+  sourceOfCattleController.dispose();
+  cattleNotesController.dispose();
+  cattleFatherTagNoController.dispose();
+  cattleMotherTagNoController.dispose();
+  cattleDOEController.dispose();
+  cattleDOBController.dispose();
+  
+  
+
+  
+
+  super.dispose();
+}
 
   // TimeOfDay _date = TimeOfDay.now();
   
@@ -318,6 +382,15 @@ class _CattleFormPageState extends State<CattleFormPage> {
           key: globalKey,
           child: Column(
             children: [
+                 if (_isBannerAdReady)
+            Align(
+              alignment: Alignment.topCenter,
+              child: Container(
+                width: _bannerAd.size.width.toDouble(),
+                height: _bannerAd.size.height.toDouble(),
+                child: AdWidget(ad: _bannerAd),
+              ),
+            ),
               SizedBox(
                 height: 20,
               ),

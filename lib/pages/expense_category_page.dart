@@ -1,9 +1,12 @@
+import 'package:farmapp/ad_helper.dart';
 import 'package:farmapp/models/expense_category_model.dart';
 import 'package:farmapp/pages/expense_category_search_page.dart';
 import 'package:farmapp/provider/transactions_provider.dart';
 import 'package:farmapp/services/expense_category_service.dart';
 import 'package:flutter/material.dart';
+import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class ExpenseCategoryPage extends StatefulWidget {
   @override
@@ -15,11 +18,58 @@ class _ExpenseCategoryPageState extends State<ExpenseCategoryPage> {
 
   TextEditingController _incomeCategoryName = TextEditingController();
 
+
+     InterstitialAd? _interstitialAd;
+ bool _isInterstitialAdReady = false;
+
+  void _loadInterstitialAd() {
+    InterstitialAd.load(
+      adUnitId: AdHelper.interstitialAdUnitId,
+      request: AdRequest(),
+      adLoadCallback: InterstitialAdLoadCallback(
+        onAdLoaded: (ad) {
+          this._interstitialAd = ad;
+
+          ad.fullScreenContentCallback = FullScreenContentCallback(
+            onAdDismissedFullScreenContent: (ad) {},
+          );
+
+          _isInterstitialAdReady = true;
+        },
+        onAdFailedToLoad: (err) {
+          print('Failed to load an interstitial ad: ${err.message}');
+          _isInterstitialAdReady = false;
+        },
+      ),
+    );
+  }
+
+  _loadInterAds() async {
+    SharedPreferences _prefs = await SharedPreferences.getInstance();
+    //bool _isSubscribed;
+    int? isSubscribed = _prefs.getInt("subscribed");
+    if (isSubscribed != 1) {
+      
+      _loadInterstitialAd();
+    }
+  }
+
   @override
   void initState() {
     super.initState();
     // _getAllIncomeCategory();
     Provider.of<TransactionsProvider>(context, listen: false).getAllExpenseCategory();
+     _loadInterAds();
+  }
+
+    @override
+  void dispose(){
+    
+     _incomeCategoryName.dispose();
+   
+     _interstitialAd?.dispose();
+    super.dispose();
+    
   }
 
   _editCategoryDialog(BuildContext context, {int? id}) {
@@ -165,6 +215,9 @@ class _ExpenseCategoryPageState extends State<ExpenseCategoryPage> {
               })),
       floatingActionButton: GestureDetector(
         onTap: () {
+           if (_isInterstitialAdReady) {
+            _interstitialAd?.show();
+          }
           _incomeCategoryName.clear();
           _editCategoryDialog(context);
         },

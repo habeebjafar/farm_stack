@@ -129,10 +129,12 @@ class _ExpensesFormState extends State<ExpensesForm> {
           IconButton(
               onPressed: () async {
                 if (validateAndSave()) {
-                  expenseProvider.saveExpense(
+                  expenseProvider.saveTrans(
+                    "Expense",
                       expenseDateController.text,
                       noteController.text,
                       selectedValue,
+                      "",
                       receiptNoController.text,
                       amountSpentController.text,
                       selectedValue == "Category Expense" ? expenseProvider.selectedValueExpenseCategory : "",

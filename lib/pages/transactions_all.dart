@@ -1,5 +1,5 @@
+
 import 'package:farmapp/ad_helper.dart';
-import 'package:farmapp/pages/income_form_test.dart';
 import 'package:farmapp/provider/transactions_provider.dart';
 import 'package:farmapp/services/transactions_service.dart';
 import 'package:flutter/material.dart';
@@ -8,14 +8,20 @@ import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-class IncomePage extends StatefulWidget {
+import 'income_form_test.dart';
+
+
+
+class AllTransaction extends StatefulWidget {
+  const AllTransaction({ Key? key }) : super(key: key);
+
   @override
-  _IncomePageState createState() => _IncomePageState();
+  State<AllTransaction> createState() => _AllTransactionState();
 }
 
-class _IncomePageState extends State<IncomePage> {
+class _AllTransactionState extends State<AllTransaction> {
 
-  static final _kAdIndex = 1;
+    static final _kAdIndex = 1;
   BannerAd? _ad;
   late BannerAd _bannerAd;
  
@@ -27,48 +33,20 @@ class _IncomePageState extends State<IncomePage> {
   }
   
 
-  
-   InterstitialAd? _interstitialAd;
- bool _isInterstitialAdReady = false;
-
-  void _loadInterstitialAd() {
-    InterstitialAd.load(
-      adUnitId: AdHelper.interstitialAdUnitId,
-      request: AdRequest(),
-      adLoadCallback: InterstitialAdLoadCallback(
-        onAdLoaded: (ad) {
-          this._interstitialAd = ad;
-
-          ad.fullScreenContentCallback = FullScreenContentCallback(
-            onAdDismissedFullScreenContent: (ad) {},
-          );
-
-          _isInterstitialAdReady = true;
-        },
-        onAdFailedToLoad: (err) {
-          print('Failed to load an interstitial ad: ${err.message}');
-          _isInterstitialAdReady = false;
-        },
-      ),
-    );
-  }
-
-  _loadInterAds() async {
+   _loadBannerAds() async {
     SharedPreferences _prefs = await SharedPreferences.getInstance();
     //bool _isSubscribed;
     int? isSubscribed = _prefs.getInt("subscribed");
     if (isSubscribed != 1) {
-       _bannerAd.load();
-      _loadInterstitialAd();
+      _bannerAd.load();
     }
   }
-
-
 
   @override
   void initState() {
     super.initState();
-     _bannerAd = BannerAd(
+
+    _bannerAd = BannerAd(
       adUnitId: AdHelper.bannerAdUnitId,
       size: AdSize.fullBanner,
       request: AdRequest(),
@@ -85,30 +63,31 @@ class _IncomePageState extends State<IncomePage> {
       ),
     );
 
-    _loadInterAds();
+    _loadBannerAds();
 
-    Provider.of<TransactionsProvider>(context, listen: false).getAllTransactionsRecord();
-    
+
+     Provider.of<TransactionsProvider>(context, listen: false).getAllTransactionsRecord();
+     
    
   }
 
-  @override
+   @override
   void dispose() {
       _ad?.dispose();
        _bannerAd.dispose();
-        _interstitialAd?.dispose();
     super.dispose();
     
   }
 
-
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      appBar: AppBar(
+        title: Text("All Transactions"),
+      ),
       body: Consumer<TransactionsProvider> (
-        builder: (_, provider, __) =>  provider.incomeTransList.length == 0 ? Center(
-          child: Text("No income recorded yet!",
+        builder: (_, provider, __) =>  provider.transactionList.length == 0 ? Center(
+          child: Text("No transaction recorded yet!",
           style: TextStyle(
             fontSize: 18,
             color: Colors.orange
@@ -121,15 +100,15 @@ class _IncomePageState extends State<IncomePage> {
                 physics: NeverScrollableScrollPhysics(),
                     itemCount: provider.transactionList.length + (_ad != null ? 1 : 0),
                     itemBuilder: (BuildContext context, int index) {
+
                        final newIndex = _getDestinationItemIndex(index);
         
                       String incomeType = provider.transactionList[newIndex].type.toString();
-                       String transType = provider.transactionList[newIndex].transactionType.toString();
+                      String transType = provider.transactionList[newIndex].transactionType.toString();
                       var formatAmountEarned = NumberFormat('#,###.00').format(num.parse("${provider.transactionList[newIndex].amount.toString()}"));
                        var date = DateFormat('MMMM dd, yyyy').format(DateTime.parse(
                     "${provider.transactionList[newIndex].date.toString()}"));
-                     // var form2 = double.parse(formatAmountEarned);
-
+                     
                       if (_ad != null && index == _kAdIndex) {
                               return Card(
                                 child: Container(
@@ -151,7 +130,7 @@ class _IncomePageState extends State<IncomePage> {
                             //         builder: (context) =>
                             //             CattleDetailsPage(_list, index)));
                           },
-                          child: transType == "Income" ? Card(
+                          child: Card(
                             child: Column(
                               children: [
                                 Padding(
@@ -168,7 +147,7 @@ class _IncomePageState extends State<IncomePage> {
                                                 CrossAxisAlignment.start,
                                             children: [
                                               Text("${incomeType == 'Milk Sale' ? incomeType + ' (${provider.transactionList[newIndex].milkQty})' :
-                                                incomeType == 'Category Income' ?  provider.transactionList[newIndex].selectedValueCategory : 
+                                                incomeType == 'Category Income' || incomeType == 'Category Expense' ?  provider.transactionList[newIndex].selectedValueCategory : 
                                                 incomeType == 'Other (specify)' ?  provider.transactionList[newIndex].otherIncomeExpense: '' }",
                                                 style: TextStyle(
                                                   fontWeight: FontWeight.bold,
@@ -187,7 +166,17 @@ class _IncomePageState extends State<IncomePage> {
                                           Column(
                                             children: [
                                               Container(
-                                                child: Text(""),
+                                                child: transType == "Income" ? Text(
+                                                  "Income",
+                                                  style: TextStyle(
+                                                    color: Colors.green
+                                                  )
+                                                  ) : Text(
+                                                    "Expense",
+                                                    style: TextStyle(
+                                                    color: Colors.orange
+                                                  )
+                                                    ) ,
                                               ),
                                               SizedBox(
                                                 height: 30,
@@ -212,7 +201,7 @@ class _IncomePageState extends State<IncomePage> {
                                               SizedBox(
                                                 height: 15,
                                               ),
-                                              popupMenuWidget(newIndex, provider.transactionList[newIndex].id)
+                                              popupMenuWidget(newIndex, provider.transactionList[newIndex].id, provider.transactionList[newIndex].transactionType)
                                             ],
                                           ),
                                         ],
@@ -222,7 +211,7 @@ class _IncomePageState extends State<IncomePage> {
                                 ),
                               ],
                             ),
-                          ) : Container(),
+                          ),
                         ),
                       );
                             }
@@ -232,42 +221,11 @@ class _IncomePageState extends State<IncomePage> {
           ),
         )
         ),
-      floatingActionButton: GestureDetector(
-        onTap: () {
-           if (_isInterstitialAdReady) {
-            _interstitialAd?.show();
-          }
-          Navigator.push(
-              context, MaterialPageRoute(builder: (context) => IncomeFormTest(transType: "Income",)));
-        },
-        child: Container(
-          width: 130,
-          padding: EdgeInsets.symmetric(horizontal: 10, vertical: 10),
-          decoration: BoxDecoration(
-              // boxShadow: [
-              //   BoxShadow( spreadRadius: 1, color: Colors.grey, )
-              // ],
-              color: Colors.orange,
-              borderRadius: BorderRadius.circular(20)),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: [
-              Icon(Icons.add, color: Colors.white),
-              Text(
-                "INCOME",
-                style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600),
-              ),
-            ],
-          ),
-        ),
-      ),
+
     );
   }
 
-   Widget popupMenuWidget(index, id) {
+   Widget popupMenuWidget(index, id, transType) {
     var selectedValue;
     return PopupMenuButton(
         icon: Icon(
@@ -282,7 +240,7 @@ class _IncomePageState extends State<IncomePage> {
               Navigator.push(
                   context,
                   MaterialPageRoute(
-                      builder: (context) => IncomeFormTest(index: index, transType: "Income",)));
+                      builder: (context) => IncomeFormTest(index: index, transType: transType)));
             } else if (selectedValue == "Delete") {
               _deleteEventDialog(id);
             }
@@ -352,4 +310,6 @@ class _IncomePageState extends State<IncomePage> {
                 "Are you sure you want to delete this income?"));
         });
   }
+
+
 }

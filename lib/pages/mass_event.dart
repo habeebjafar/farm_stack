@@ -1,9 +1,12 @@
+import 'package:farmapp/ad_helper.dart';
 import 'package:farmapp/pages/mass_event_form.dart';
 import 'package:farmapp/provider/events_provider.dart';
 import 'package:farmapp/services/event_service.dart';
 import 'package:flutter/material.dart';
+import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class MassEvent extends StatefulWidget {
   @override
@@ -11,17 +14,66 @@ class MassEvent extends StatefulWidget {
 }
 
 class _MassEventState extends State<MassEvent> {
- // EventService _eventService = EventService();
- // List<EventModel> _list = [];
+
+   static final _kAdIndex = 1;
+  BannerAd? _ad;
+  late BannerAd _bannerAd;
+ 
+  int _getDestinationItemIndex(int rawIndex) {
+    if (rawIndex >= _kAdIndex && _ad != null) {
+      return rawIndex - 1;
+    }
+    return rawIndex;
+  }
+  
+
+   _loadBannerAds() async {
+    SharedPreferences _prefs = await SharedPreferences.getInstance();
+    //bool _isSubscribed;
+    int? isSubscribed = _prefs.getInt("subscribed");
+    if (isSubscribed != 1) {
+      _bannerAd.load();
+    }
+  }
+
+
+
   var eventProvider;
 
   @override
   void initState() {
     super.initState();
 
+     _bannerAd = BannerAd(
+      adUnitId: AdHelper.bannerAdUnitId,
+      size: AdSize.fullBanner,
+      request: AdRequest(),
+      listener: BannerAdListener(
+        onAdLoaded: (ad) {
+          setState(() {
+            _ad = ad as BannerAd;
+          });
+        },
+        onAdFailedToLoad: (ad, error) {
+          ad.dispose();
+          print('Ad load failed (code=${error.code} message=${error.message})');
+        },
+      ),
+    );
+
+    _loadBannerAds();
+
     eventProvider = Provider.of<EventsProvider>(context, listen: false);
 
     eventProvider.getAllMassEventRecord(getAll: "All");
+  }
+
+    @override
+  void dispose() {
+      _ad?.dispose();
+       _bannerAd.dispose();
+    super.dispose();
+    
   }
 
  
@@ -56,11 +108,24 @@ class _MassEventState extends State<MassEvent> {
           ),)
         ) : ListView.builder(
                     padding: EdgeInsets.only(bottom: 70),
-                    itemCount: eventProvider.massEventsList.length,
+                    itemCount: eventProvider.massEventsList.length + (_ad != null ? 1 : 0),
                     itemBuilder: (BuildContext context, int index) {
-                      String med = eventProvider.massEventsList[index].eventType.toString();
+                       final newIndex = _getDestinationItemIndex(index);
+                      String med = eventProvider.massEventsList[newIndex].eventType.toString();
                       var date = DateFormat('MMMM dd, yyyy').format(DateTime.parse(
-                    "${eventProvider.massEventsList[index].eventDate.toString()}"));
+                    "${eventProvider.massEventsList[newIndex].eventDate.toString()}"));
+
+                     if (_ad != null && index == _kAdIndex) {
+                              return Card(
+                                child: Container(
+                                  width: _ad!.size.width.toDouble(),
+                                  padding: EdgeInsets.symmetric(horizontal: 6),
+                                  height: 90.0,
+                                  alignment: Alignment.center,
+                                  child: AdWidget(ad: _ad!),
+                                ),
+                              );
+                            } else {
                       return Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 3),
                         child: Card(
@@ -85,7 +150,7 @@ class _MassEventState extends State<MassEvent> {
                                           ),
                                           SizedBox(width: 10),
                                           Text(
-                                            "${med == 'Other' ? eventProvider.massEventsList[index].nameOfMedicine : eventProvider.massEventsList[index].eventType}",
+                                            "${med == 'Other' ? eventProvider.massEventsList[newIndex].nameOfMedicine : eventProvider.massEventsList[newIndex].eventType}",
                                             style: TextStyle(
                                                 fontSize: 18,
                                                 color: Colors.white,
@@ -93,7 +158,7 @@ class _MassEventState extends State<MassEvent> {
                                           ),
                                         ],
                                       ),
-                                       popupMenuWidget(index, eventProvider.massEventsList[index].id),
+                                       popupMenuWidget(newIndex, eventProvider.massEventsList[newIndex].id),
                                     ],
                                   ),
                                 ),
@@ -144,7 +209,7 @@ class _MassEventState extends State<MassEvent> {
                                             width: 45,
                                           ),
                                           Text(
-                                            "${eventProvider.massEventsList[index].nameOfMedicine}",
+                                            "${eventProvider.massEventsList[newIndex].nameOfMedicine}",
                                             style: TextStyle(
                                                 fontWeight: FontWeight.w600,
                                                 color: Theme.of(context)
@@ -173,7 +238,7 @@ class _MassEventState extends State<MassEvent> {
                                     Container(
                                       width: 200,
                                       child: Text(
-                                        "${eventProvider.massEventsList[index].eventNotes}",
+                                        "${eventProvider.massEventsList[newIndex].eventNotes}",
                                         style: TextStyle(
                                             fontWeight: FontWeight.w600,
                                             color:
@@ -188,6 +253,7 @@ class _MassEventState extends State<MassEvent> {
                           ),
                         ),
                       );
+                            }
                     }),
               );
             }

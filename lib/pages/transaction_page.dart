@@ -6,11 +6,39 @@ import 'package:flutter/material.dart';
 import 'expense_page.dart';
 
 class TransactiontPage extends StatefulWidget {
+  final toExpensePage;
+  const TransactiontPage({this.toExpensePage});
   @override
   _TransactiontPageState createState() => _TransactiontPageState();
 }
 
-class _TransactiontPageState extends State<TransactiontPage> {
+class _TransactiontPageState extends State<TransactiontPage> with TickerProviderStateMixin {
+
+  late TabController   tabController;
+
+  @override
+  void initState() {
+  
+    tabController = TabController(
+      length: 2, 
+      vsync: this,
+      //  initialIndex: 1,
+       
+       );
+
+       if (widget.toExpensePage == 1) {
+  tabController.index = 1;
+}
+     
+      
+    super.initState();
+  }
+
+  @override
+  void dispose() {
+   tabController.dispose();
+    super.dispose();
+  }
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -28,6 +56,7 @@ class _TransactiontPageState extends State<TransactiontPage> {
               child: Container(
                 color: Colors.white,
                 child: TabBar(
+                  controller: tabController,
                   indicatorColor: Colors.orange,
                   //indicatorWeight: 10,
                   //indicatorSize: TabBarIndicatorSize.tab,
@@ -65,6 +94,11 @@ class _TransactiontPageState extends State<TransactiontPage> {
             ),
           ),
           body: TabBarView(
+            controller: tabController,
+            
+            
+
+
             children: [IncomePage(), ExpensesPage()],
           ),
         ),

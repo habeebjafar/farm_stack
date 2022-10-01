@@ -1,4 +1,5 @@
 import 'package:farmapp/models/cattle_model.dart';
+import 'package:farmapp/pages/cattle_report_pdf.dart';
 import 'package:farmapp/services/cattle_service.dart';
 import 'package:farmapp/widget/indicator.dart';
 import 'package:fl_chart/fl_chart.dart';
@@ -116,6 +117,16 @@ class PieChart2State extends State {
     return Scaffold(
       appBar: AppBar(
         title: Text("Cattle Report"),
+          actions: [
+            IconButton(onPressed: () {
+              Navigator.push(context,
+               MaterialPageRoute(
+                builder: (context) =>CattleReportPDF()
+               ));
+
+            }, icon: Icon(Icons.picture_as_pdf)),
+           
+          ],
       ),
       body: SingleChildScrollView(
         child: Column(

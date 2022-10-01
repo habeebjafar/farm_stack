@@ -12,6 +12,7 @@ class CattleProvider with ChangeNotifier {
   CattleBreedService _cattleBreedService = CattleBreedService();
   List<CattleBreedModel> list = [];
   List<CattleModel> cattleList = [];
+   List<CattleModel> archivedcattleList = [];
   List<CattleModel> lostCattleList = [];
   List<CattleModel> deadCattleList = [];
   List<CattleModel> soldCattleList = [];
@@ -113,11 +114,12 @@ class CattleProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  Future<List<CattleModel>> getAllCattles(String? searchtext, {String? offspringSearch}) async {
+  Future<List<CattleModel>> getAllCattles(String? searchtext, {String? offspringSearch, DateTime? dateSearch, DateTime? dateSearchTwo}) async {
     var response = await _cattleService.getAllTCattles();
     print(response);
 
     cattleList.clear();
+    archivedcattleList.clear();
     lostCattleList.clear();
     deadCattleList.clear();
     soldCattleList.clear();
@@ -163,19 +165,40 @@ class CattleProvider with ChangeNotifier {
         cattleList.add(model);
       }
 
-      if (model.cattleArchiveReason == "Lost") {
-        lostCattleList.add(model);
-      } else if (model.cattleArchiveReason == "Dead") {
-        deadCattleList.add(model);
-      } else if (model.cattleArchiveReason == "Sold") {
-        soldCattleList.add(model);
-      } else if (model.cattleArchiveReason == "Loaned") {
-        loanedCattleList.add(model);
-      } else if (model.cattleArchiveReason == "Gifted") {
-        giftedCattleList.add(model);
-      } else if (model.cattleArchiveReason == "Other") {
-        otherCattleList.add(model);
-      }
+  
+
+     if (model.cattleArchive == "Unarchive Cattle") {
+  if (dateSearch != null && dateSearchTwo == null) {
+     if (dateSearch.compareTo(DateTime.parse(model.cattleArchiveDate!)) <= 0) {
+  
+       _cattleDateIf(model);
+  
+    }
+      
+     }
+   
+  
+   else if (dateSearchTwo != null && dateSearch == null) {
+     DateTime date = new  DateTime.now();
+     DateTime currentDate = new DateTime(date.year, date.month, 01);
+     if (dateSearchTwo.compareTo(DateTime.parse(model.cattleArchiveDate!)) <= 0 && currentDate.compareTo(DateTime.parse(model.cattleArchiveDate!)) > 0 ) {
+  
+         _cattleDateIf(model);
+  
+    }
+      
+     }
+   
+  
+   else if (dateSearch != null && dateSearchTwo != null) {
+     if (dateSearch.compareTo(DateTime.parse(model.cattleArchiveDate!)) <= 0 &&
+         dateSearchTwo.compareTo(DateTime.parse(model.cattleArchiveDate!)) >= 0) {
+  
+             _cattleDateIf(model);
+    }
+      
+     }
+}
 
       if (searchtext == "All") {
         cattleList.add(model);
@@ -189,8 +212,9 @@ class CattleProvider with ChangeNotifier {
     notifyListeners();
 
     return cattleList;
-    // notifyListeners();
   }
+
+
 
   updateCattleSingleField(conditionalColumn, colunmName, colunmValue, id) async{
    await _cattleService.updateCattleSingleField(conditionalColumn, colunmName, colunmValue, id);
@@ -293,7 +317,7 @@ deleteCattleById(cattleId) async{
 
     if(response > 0){
 
-      print("Cattle deleted");
+     
 
        var cattleIdResponse =  await _repository.deleteByColunmName("eventIndividual", "cattleId", cattleId);
            if(cattleIdResponse > 0){
@@ -319,11 +343,21 @@ deleteCattleById(cattleId) async{
 }
 
 
-// deleteByColunmName(columnValue) async{
-
-//   return await _repository.deleteByColunmName("cattle", "cattleBreedId", columnValue);
-
-// }
-
+void _cattleDateIf(model){
+  archivedcattleList.add(model);
+   if (model.cattleArchiveReason == "Lost") {
+        lostCattleList.add(model);
+      } else if (model.cattleArchiveReason == "Dead") {
+        deadCattleList.add(model);
+      } else if (model.cattleArchiveReason == "Sold") {
+        soldCattleList.add(model);
+      } else if (model.cattleArchiveReason == "Loaned") {
+        loanedCattleList.add(model);
+      } else if (model.cattleArchiveReason == "Gifted") {
+        giftedCattleList.add(model);
+      } else if (model.cattleArchiveReason == "Other") {
+        otherCattleList.add(model);
+      }
+}
 
 }
