@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_paystack/flutter_paystack.dart';
 import 'package:farmapp/services/initiliaze_paystack.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-
+import 'package:farmapp/auth/paystackkeys.dart';
 class PaystackPaymentPage extends StatefulWidget {
   const PaystackPaymentPage({ Key? key }) : super(key: key);
 
@@ -18,8 +18,8 @@ class _PaystackPaymentPageState extends State<PaystackPaymentPage> {
   @override
   void initState() {
    paystackPlugin.initialize(
-        //publicKey: "pk_live_1cb1e352bc24ae17ffb002a01e436d380a497df0");
-         publicKey: "pk_test_8c8c0ef10101fe29647765ce65986ce6826e5f57");
+        
+         publicKey: "$payKeys");
     chargeCard();
     super.initState();
   }
